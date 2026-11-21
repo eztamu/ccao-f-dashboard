@@ -1,0 +1,667 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CCAO-F 模擬クイズ</title>
+<style>
+
+:root {
+  --surface:#F5F6F9; --card:#FFFFFF; --ink:#1C2536; --sub:#5C6678; --line:#E3E6EE;
+  --accent:#3B55C4; --accent-soft:#E7EBFA; --ok:#1E7F4F; --ok-soft:#E2F2E9;
+  --ng:#C2403B; --ng-soft:#F9E7E6; --due:#B07C1F; --due-soft:#F7EEDC;
+}
+@media (prefers-color-scheme: dark) { :root {
+  --surface:#12161F; --card:#1B2230; --ink:#E7EBF4; --sub:#98A2B6; --line:#2A3245;
+  --accent:#5D74D8; --accent-soft:#232C4A; --ok:#3A9A6D; --ok-soft:#1B3128;
+  --ng:#C95F5B; --ng-soft:#3A2323; --due:#A9843C; --due-soft:#332B18;
+} }
+:root[data-theme="light"] {
+  --surface:#F5F6F9; --card:#FFFFFF; --ink:#1C2536; --sub:#5C6678; --line:#E3E6EE;
+  --accent:#3B55C4; --accent-soft:#E7EBFA; --ok:#1E7F4F; --ok-soft:#E2F2E9;
+  --ng:#C2403B; --ng-soft:#F9E7E6; --due:#B07C1F; --due-soft:#F7EEDC;
+}
+:root[data-theme="dark"] {
+  --surface:#12161F; --card:#1B2230; --ink:#E7EBF4; --sub:#98A2B6; --line:#2A3245;
+  --accent:#5D74D8; --accent-soft:#232C4A; --ok:#3A9A6D; --ok-soft:#1B3128;
+  --ng:#C95F5B; --ng-soft:#3A2323; --due:#A9843C; --due-soft:#332B18;
+}
+* { box-sizing:border-box; }
+body { margin:0; background:var(--surface); color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;
+  line-height:1.6; -webkit-font-smoothing:antialiased; }
+.wrap { max-width:660px; margin:0 auto; padding:16px 16px 48px; display:flex; flex-direction:column; gap:14px; }
+.card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; }
+.eyebrow { font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--sub); font-weight:600; }
+.chip { display:inline-block; font-size:12px; font-weight:600; padding:2px 10px; border-radius:999px;
+  background:var(--accent-soft); color:var(--accent); }
+button { font:inherit; cursor:pointer; }
+button:focus-visible, a:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+@media (prefers-reduced-motion: reduce) { * { transition:none !important; animation:none !important; } }
+.num { font-variant-numeric:tabular-nums; }
+
+.scenario { font-size:16.5px; }
+.qtext { font-weight:650; margin:12px 0 4px; }
+.choices { display:flex; flex-direction:column; gap:10px; }
+.choice { display:flex; gap:10px; align-items:flex-start; text-align:left; width:100%;
+  background:var(--card); border:1.5px solid var(--line); border-radius:10px; padding:12px 14px;
+  color:var(--ink); transition:border-color .12s; }
+.choice:not(:disabled):hover { border-color:var(--accent); }
+.choice .key { font-weight:700; color:var(--accent); flex:0 0 auto; }
+.choice.sel { border-color:var(--accent); background:var(--surface); }
+.choice.correct { border-color:var(--ok); background:var(--ok-soft); }
+.choice.wrong { border-color:var(--ng); background:var(--ng-soft); }
+.choice:disabled { cursor:default; opacity:.92; }
+.verdict { font-weight:700; }
+.verdict.ok { color:var(--ok); } .verdict.ng { color:var(--ng); }
+.expl { border-left:3px solid var(--accent); padding:2px 0 2px 12px; margin-top:10px; font-size:14.5px; }
+.expl a { color:var(--accent); word-break:break-all; font-size:13px; }
+.next { background:var(--accent); color:#fff; border:none; border-radius:10px; padding:13px; font-weight:700; width:100%; }
+.next:disabled { opacity:.4; cursor:default; }
+.progressbar { height:6px; background:var(--line); border-radius:999px; overflow:hidden; }
+.progressbar > div { height:100%; background:var(--accent); border-radius:999px; transition:width .2s; }
+.topline { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.timer { color:var(--sub); }
+.timer.over { color:var(--ng); }
+.pace { font-size:13px; color:var(--sub); margin:4px 0 12px; }
+.pace b { color:var(--ink); }
+.score { font-size:40px; font-weight:750; }
+.qr { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:13px; background:var(--surface);
+  border:1px dashed var(--line); border-radius:8px; padding:10px; word-break:break-all; user-select:all; }
+.copybtn { background:var(--card); color:var(--accent); border:1.5px solid var(--accent);
+  border-radius:10px; padding:11px; font-weight:700; width:100%; margin-top:8px; }
+.reslist { display:flex; flex-direction:column; gap:6px; font-size:14px; }
+.reslist .row { display:flex; gap:8px; align-items:baseline; }
+.mark { font-weight:700; flex:0 0 1.2em; }
+.hidden { display:none; }
+.formbtn { display:block; text-align:center; text-decoration:none; background:var(--accent); color:#fff;
+  border:none; border-radius:10px; padding:13px; font-weight:700; width:100%; margin-top:8px; }
+.pausebar { display:flex; gap:8px; margin-top:14px; }
+.pausebtn { flex:1; background:var(--card); color:var(--sub); border:1.5px solid var(--line);
+  border-radius:10px; padding:10px 6px; font-weight:700; font-size:13px; }
+.pausebtn:hover { border-color:var(--accent); color:var(--accent); }
+.examclock { font-weight:700; color:var(--accent); }
+.examclock.low { color:var(--ng); }
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <div>
+    <div class="topline">
+      <span class="eyebrow" id="setlabel">CCAO-F Practice · A2+A5+A6 · 4問</span>
+      <span class="eyebrow num examclock hidden" id="examclock"></span>
+      <span class="eyebrow num timer" id="timer">0:00</span>
+      <span class="eyebrow num" id="counter"></span>
+    </div>
+    <div class="progressbar" aria-hidden="true"><div id="pbar" style="width:0%"></div></div>
+  </div>
+  <div id="resumebox" class="card hidden">
+    <span class="eyebrow">前回の続き</span>
+    <p id="resumeinfo" style="margin:8px 0"></p>
+    <button class="next" id="resumebtn">▶ 続きから再開</button>
+    <button class="pausebtn" id="resumerecbtn" style="width:100%;margin-top:8px">解いた分だけ記録して終了</button>
+    <button class="pausebtn" id="restartbtn" style="width:100%;margin-top:8px">最初からやり直す</button>
+  </div>
+  <div id="pausedbox" class="card hidden">
+    <span class="eyebrow">保存しました</span>
+    <p id="pausedinfo" style="margin:8px 0"></p>
+    <button class="next" id="continuebtn">▶ 今すぐ再開</button>
+  </div>
+  <div id="quiz" class="card">
+    <span class="chip" id="domchip"></span>
+    <p class="scenario" id="scenario"></p>
+    <p class="qtext" id="question"></p>
+    <p class="pace hidden" id="examnote">本番通し: 制限時間は実時間で進みます（ページを閉じても止まりません）。止めたいときは「⏸ 中断して保存」。各問の正誤・解説は最後にまとめて表示します。</p>
+    <div class="choices" id="choices"></div>
+    <button class="next hidden" id="submitbtn" style="margin-top:12px">回答する</button>
+    <div id="feedback" class="hidden">
+      <p class="verdict" id="verdict"></p>
+      <div class="expl"><span id="expl"></span><br><a id="srclink" target="_blank" rel="noopener"></a></div>
+      <button class="next" id="nextbtn" style="margin-top:14px">次の問題 →</button>
+    </div>
+    <div class="pausebar">
+      <button class="pausebtn" id="pausebtn">⏸ 中断して保存</button>
+      <button class="pausebtn" id="earlybtn">📮 ここまでを記録して終了</button>
+    </div>
+  </div>
+  <div id="final" class="card hidden">
+    <span class="eyebrow">Result</span>
+    <div class="score num" id="scoreline"></div>
+    <p class="pace" id="paceline"></p>
+    <div class="reslist" id="reslist"></div>
+    <a id="formbtn" class="formbtn hidden" target="_blank" rel="noopener">📮 結果を送信して記録</a>
+    <p id="codelabel" style="margin:16px 0 6px; font-weight:650;">結果コード（手動記録用）</p>
+    <div class="qr" id="qrcode"></div>
+    <button class="copybtn" id="copybtn">結果コードをコピー</button>
+  </div>
+</div>
+<script>
+const QUESTIONS_DEFAULT = [{"id": "A2-q002", "statement_id": "A2-2", "pack": "gen", "angle": "find-error", "role": "オペレーション", "scenario": "オペレーション担当者が、アップロードした発注履歴の表からClaudeに拠点別の年間発注コストを集計させました。結果は計算手順つきで整然と示されており、この数値を明日の経営会議の資料に使う予定です。チームでは、使用前の確認方法について次の4案が出ました。", "question": "確認方法の案のうち、不適切なものはどれですか。", "choices": {"A": "表計算ソフトで同じ集計を別途行い、Claudeが示した拠点別の合計と一致するか、会議の前に突き合わせます。", "B": "計算手順が丁寧に示されているので、手順が正しいことの裏付けとみなし、再計算せずに数値を資料へ転記します。", "C": "拠点別の合計を足し上げた総額が、元の発注履歴にある総額と合うかを確認し、ずれがあれば原因を調べます。", "D": "元データから数件の拠点を抜き出して手計算し、重複行や欠損行が集計に影響していないかを確認します。"}, "answer": "B", "select_count": 1, "explanation": "正解（不適切なもの）はB。Claudeは計算を実行できますが、複雑な計算やミッションクリティカルな計算は、専門の数学ソフトや手作業など別の方法で検証する必要があります。手順が整って見えることは正しさの証拠ではなく、もっともらしいのに誤っている出力の典型的な見え方です。Aは表計算ソフトによる独立した再計算で、適切です。Cは総額の整合性を元データと照合するもので、不整合の検出に有効です。Dは抜き取りの手計算で、集計の誤りやデータの不備を確認でき、適切です。", "source": "https://support.claude.com/ja/articles/10366421-claudeは数学方程式と計算にどのように対応していますか", "created": "2026-11-21"}, {"id": "AOFF-2", "statement_id": "A5-4", "pack": "official", "angle": "design-choice", "role": "コンサルタント", "scenario": "あるチームのClient Proposals Projectは、6か月間、一貫性のある整った形式の下書きを作成してきました。この3週間、下書きが前四半期に会社が廃止した価格表を引用するようになり、ときどき別のクライアントの案件の用語も使用しています。Projectの指示は編集されておらず、Projectに追加されている提案書フォーマット用のSkillも変更されていません。", "question": "チームがまず取るべき対応はどれですか。", "choices": {"A": "下書きの一貫性が失われる原因は通常、指示のドリフトであるため、より厳格なフォーマットと用語のルールでProjectの指示を書き直します。", "B": "フォーマット用のSkillを削除し、新しいバージョンのSkillが公開されるまでリクエストごとのプロンプトで対応します。", "C": "Projectのナレッジにある廃止済みの価格表を差し替え、別のクライアントに言及しているメモリを削除します。", "D": "より高性能なモデルに切り替え、エフォートレベルを上げ、最近の下書きを再生成して品質が戻るかを確認します。"}, "answer": "C", "select_count": 1, "explanation": "2つの症状は、2つの設定レイヤーを示しています。廃止された価格表を引用するのは、ナレッジソースが古くなっていることの典型的な兆候です。別のクライアントの案件の用語が現れるのは、ワークストリームをまたいでメモリが蓄積されていることの典型的な兆候です。文書を差し替え、クライアントをまたぐメモリを削除すれば、その両方に対処できます。指示（A）とSkill（B）は変更されていないため、出力の変化の原因にはなりえません。モデルやエフォートレベルの変更（D）は推論の品質に影響するものであり、Projectが最新かつ適切な範囲のナレッジにグラウンディングされているかどうかには影響しません。", "source": "https://anthropic-partners.skilljar.com/", "created": "2026-11-21"}, {"id": "AOFF-3", "statement_id": "A6-2", "pack": "official", "angle": "design-choice", "role": "人事", "scenario": "人事ビジネスパートナーが、Claudeのコード実行による分析を使って、スプレッドシートのエクスポートファイルから離職の傾向を特定したいと考えています。このファイルには、従業員の氏名、自宅住所、給与、人事評価、退職面談での自由記述のコメントが含まれています。組織のポリシーでは、従業員の個人データは機密情報に分類され、AIによる分析は匿名化されたデータに対してのみ認められています。", "question": "ポリシーに沿った方法はどれですか。", "choices": {"A": "シークレットチャットは会話履歴とメモリの対象外で、セッション後に記録が残らないため、ファイルをそのままシークレットチャットにアップロードします。", "B": "アップロード前にエクスポートファイルを匿名化し（氏名と住所を削除し、識別子をコードに置き換え、退職面談のコメントを精査します）、作業の機密性に応じてメモリの設定を調整します。", "C": "許可された同僚だけがデータと結果を閲覧できるように、人事チームに限定したProjectにファイル全体をアップロードします。", "D": "アップロード後にClaude自身にデータを匿名化させ、その後、元のファイルを会話から削除します。"}, "answer": "B", "select_count": 1, "explanation": "ポリシーではAIによる分析の前に匿名化が求められているため、データは共有する前に加工する必要があります。また、自由記述のコメントは個人を特定できる情報が含まれていても気づきにくい箇所であり、精査が必要です。シークレットチャット（A）は保持とメモリを制御しますが、開示される内容は変わりません。Projectを人事チームに限定する（C）と、結果を閲覧できる人は制御できますが、個人を特定できるデータをアップロードすることに変わりはありません。アップロード後にClaudeに匿名化させる（D）と、何の保護も適用されないうちに機密データが共有されてしまいます。", "source": "https://anthropic-partners.skilljar.com/", "created": "2026-11-21"}, {"id": "AOFF-1", "statement_id": "A2-2", "pack": "official", "angle": "design-choice", "role": "マーケティング", "scenario": "マーケティングマネージャーが、明日のクライアントとの会議に向けて1ページの競合分析資料の下書きをClaudeに依頼し、情報源として社内の調査PDFを2つアップロードしました。下書きは読みやすく、調査会社名を挙げた引用付きの市場シェアの割合3つ、競合企業のCEOによるものとされる発言、クライアント自身の製品ラインの概要が含まれています。マネージャーはまだPDFを開いていません。", "question": "この資料をクライアントに渡す前に、マネージャーはどうすべきですか。", "choices": {"A": "下書きのまま送付します。調査会社名を挙げた引用とアップロードした情報源があるため、初回の会議には十分信頼できる数値であり、修正が必要ならクライアントが依頼できます。", "B": "引用された各割合とCEOの発言を、アップロードしたPDFまたは信頼できる情報源と照合し、確認できないものは削除するかフラグを付けます。", "C": "資料内のすべての数値と発言が正確であることを確認するようClaudeに依頼し、内容が検証済みである旨の注記を追加させます。", "D": "誤りが含まれないように、資料からすべての数値と発言を削除し、定性的な概要のみを提示します。"}, "answer": "B", "select_count": 1, "explanation": "名前を挙げた引用付きの具体的な数値や、発言者を特定した発言は、まさに捏造された詳細や、もっともらしく作り出された詳細が現れやすいパターンです。また、この資料は社外向けの成果物であり、その責任は引き続きマネージャーにあります。アップロードした情報源または信頼できる外部の情報源と照らし合わせて独立に検証することで、確認済みの主張と未確認の主張を区別できます。確認せずに下書きを送付する（A）のは、引用の正確さではなく引用が存在することに頼っています。Claudeに自身の出力を確認させる（C）のは、独立した確認になりません。具体的な情報をすべて削除する（D）と、裏付けのある内容とない内容を区別しないまま価値を損なってしまいます。", "source": "https://anthropic-partners.skilljar.com/", "created": "2026-11-21"}];
+const QUESTIONS_ALL = [{"id": "A2-q002", "statement_id": "A2-2", "pack": "gen", "angle": "find-error", "role": "オペレーション", "scenario": "オペレーション担当者が、アップロードした発注履歴の表からClaudeに拠点別の年間発注コストを集計させました。結果は計算手順つきで整然と示されており、この数値を明日の経営会議の資料に使う予定です。チームでは、使用前の確認方法について次の4案が出ました。", "question": "確認方法の案のうち、不適切なものはどれですか。", "choices": {"A": "表計算ソフトで同じ集計を別途行い、Claudeが示した拠点別の合計と一致するか、会議の前に突き合わせます。", "B": "計算手順が丁寧に示されているので、手順が正しいことの裏付けとみなし、再計算せずに数値を資料へ転記します。", "C": "拠点別の合計を足し上げた総額が、元の発注履歴にある総額と合うかを確認し、ずれがあれば原因を調べます。", "D": "元データから数件の拠点を抜き出して手計算し、重複行や欠損行が集計に影響していないかを確認します。"}, "answer": "B", "select_count": 1, "explanation": "正解（不適切なもの）はB。Claudeは計算を実行できますが、複雑な計算やミッションクリティカルな計算は、専門の数学ソフトや手作業など別の方法で検証する必要があります。手順が整って見えることは正しさの証拠ではなく、もっともらしいのに誤っている出力の典型的な見え方です。Aは表計算ソフトによる独立した再計算で、適切です。Cは総額の整合性を元データと照合するもので、不整合の検出に有効です。Dは抜き取りの手計算で、集計の誤りやデータの不備を確認でき、適切です。", "source": "https://support.claude.com/ja/articles/10366421-claudeは数学方程式と計算にどのように対応していますか", "created": "2026-11-21"}, {"id": "AOFF-1", "statement_id": "A2-2", "pack": "official", "angle": "design-choice", "role": "マーケティング", "scenario": "マーケティングマネージャーが、明日のクライアントとの会議に向けて1ページの競合分析資料の下書きをClaudeに依頼し、情報源として社内の調査PDFを2つアップロードしました。下書きは読みやすく、調査会社名を挙げた引用付きの市場シェアの割合3つ、競合企業のCEOによるものとされる発言、クライアント自身の製品ラインの概要が含まれています。マネージャーはまだPDFを開いていません。", "question": "この資料をクライアントに渡す前に、マネージャーはどうすべきですか。", "choices": {"A": "下書きのまま送付します。調査会社名を挙げた引用とアップロードした情報源があるため、初回の会議には十分信頼できる数値であり、修正が必要ならクライアントが依頼できます。", "B": "引用された各割合とCEOの発言を、アップロードしたPDFまたは信頼できる情報源と照合し、確認できないものは削除するかフラグを付けます。", "C": "資料内のすべての数値と発言が正確であることを確認するようClaudeに依頼し、内容が検証済みである旨の注記を追加させます。", "D": "誤りが含まれないように、資料からすべての数値と発言を削除し、定性的な概要のみを提示します。"}, "answer": "B", "select_count": 1, "explanation": "名前を挙げた引用付きの具体的な数値や、発言者を特定した発言は、まさに捏造された詳細や、もっともらしく作り出された詳細が現れやすいパターンです。また、この資料は社外向けの成果物であり、その責任は引き続きマネージャーにあります。アップロードした情報源または信頼できる外部の情報源と照らし合わせて独立に検証することで、確認済みの主張と未確認の主張を区別できます。確認せずに下書きを送付する（A）のは、引用の正確さではなく引用が存在することに頼っています。Claudeに自身の出力を確認させる（C）のは、独立した確認になりません。具体的な情報をすべて削除する（D）と、裏付けのある内容とない内容を区別しないまま価値を損なってしまいます。", "source": "https://anthropic-partners.skilljar.com/", "created": "2026-11-21"}, {"id": "AOFF-2", "statement_id": "A5-4", "pack": "official", "angle": "design-choice", "role": "コンサルタント", "scenario": "あるチームのClient Proposals Projectは、6か月間、一貫性のある整った形式の下書きを作成してきました。この3週間、下書きが前四半期に会社が廃止した価格表を引用するようになり、ときどき別のクライアントの案件の用語も使用しています。Projectの指示は編集されておらず、Projectに追加されている提案書フォーマット用のSkillも変更されていません。", "question": "チームがまず取るべき対応はどれですか。", "choices": {"A": "下書きの一貫性が失われる原因は通常、指示のドリフトであるため、より厳格なフォーマットと用語のルールでProjectの指示を書き直します。", "B": "フォーマット用のSkillを削除し、新しいバージョンのSkillが公開されるまでリクエストごとのプロンプトで対応します。", "C": "Projectのナレッジにある廃止済みの価格表を差し替え、別のクライアントに言及しているメモリを削除します。", "D": "より高性能なモデルに切り替え、エフォートレベルを上げ、最近の下書きを再生成して品質が戻るかを確認します。"}, "answer": "C", "select_count": 1, "explanation": "2つの症状は、2つの設定レイヤーを示しています。廃止された価格表を引用するのは、ナレッジソースが古くなっていることの典型的な兆候です。別のクライアントの案件の用語が現れるのは、ワークストリームをまたいでメモリが蓄積されていることの典型的な兆候です。文書を差し替え、クライアントをまたぐメモリを削除すれば、その両方に対処できます。指示（A）とSkill（B）は変更されていないため、出力の変化の原因にはなりえません。モデルやエフォートレベルの変更（D）は推論の品質に影響するものであり、Projectが最新かつ適切な範囲のナレッジにグラウンディングされているかどうかには影響しません。", "source": "https://anthropic-partners.skilljar.com/", "created": "2026-11-21"}, {"id": "AOFF-3", "statement_id": "A6-2", "pack": "official", "angle": "design-choice", "role": "人事", "scenario": "人事ビジネスパートナーが、Claudeのコード実行による分析を使って、スプレッドシートのエクスポートファイルから離職の傾向を特定したいと考えています。このファイルには、従業員の氏名、自宅住所、給与、人事評価、退職面談での自由記述のコメントが含まれています。組織のポリシーでは、従業員の個人データは機密情報に分類され、AIによる分析は匿名化されたデータに対してのみ認められています。", "question": "ポリシーに沿った方法はどれですか。", "choices": {"A": "シークレットチャットは会話履歴とメモリの対象外で、セッション後に記録が残らないため、ファイルをそのままシークレットチャットにアップロードします。", "B": "アップロード前にエクスポートファイルを匿名化し（氏名と住所を削除し、識別子をコードに置き換え、退職面談のコメントを精査します）、作業の機密性に応じてメモリの設定を調整します。", "C": "許可された同僚だけがデータと結果を閲覧できるように、人事チームに限定したProjectにファイル全体をアップロードします。", "D": "アップロード後にClaude自身にデータを匿名化させ、その後、元のファイルを会話から削除します。"}, "answer": "B", "select_count": 1, "explanation": "ポリシーではAIによる分析の前に匿名化が求められているため、データは共有する前に加工する必要があります。また、自由記述のコメントは個人を特定できる情報が含まれていても気づきにくい箇所であり、精査が必要です。シークレットチャット（A）は保持とメモリを制御しますが、開示される内容は変わりません。Projectを人事チームに限定する（C）と、結果を閲覧できる人は制御できますが、個人を特定できるデータをアップロードすることに変わりはありません。アップロード後にClaudeに匿名化させる（D）と、何の保護も適用されないうちに機密データが共有されてしまいます。", "source": "https://anthropic-partners.skilljar.com/", "created": "2026-11-21"}];
+const MASTERY = {"A2-q002": {"s": "new", "k": 0, "r": null, "w": 0}, "AOFF-1": {"s": "new", "k": 0, "r": null, "w": 0}, "AOFF-2": {"s": "new", "k": 0, "r": null, "w": 0}, "AOFF-3": {"s": "new", "k": 0, "r": null, "w": 0}};
+const WEIGHTS = {"A1": 15, "A2": 20, "A3": 15, "A4": 18, "A5": 15, "A6": 17};
+const EXAM_TOTAL = 70, EXAM_MINUTES = 120;
+const EXAM_TOTAL_SEC = EXAM_MINUTES * 60;
+// REVIEW-SELECT-BEGIN
+// 習得ループの出題選定。優先順: 期日が来た復習(誤答回数が多い順) → 前倒しの復習(期日が近い順) → 新規(残り枠まで)。
+// mastery[id] = {s: state, k: streak, r: next_review, w: wrong_count}
+function selectReviewSet(mastery, ids, today, n, newLeft, excluded) {
+  const ex = new Set(excluded);
+  const cand = ids.filter(id => mastery[id] && !ex.has(id));
+  const learning = cand.filter(id => mastery[id].s === "learning");
+  const due = learning.filter(id => mastery[id].r <= today)
+    .sort((a, b) => mastery[b].w - mastery[a].w || mastery[a].r.localeCompare(mastery[b].r) || a.localeCompare(b));
+  const early = learning.filter(id => mastery[id].r > today)
+    .sort((a, b) => mastery[a].r.localeCompare(mastery[b].r) || a.localeCompare(b));
+  const fresh = cand.filter(id => mastery[id].s === "new").sort();
+  let out = due.slice(0, n);
+  if (out.length < n) out = out.concat(early.slice(0, n - out.length));
+  let newCount = 0;
+  if (out.length < n) {
+    const f = fresh.slice(0, Math.min(n - out.length, Math.max(0, newLeft)));
+    out = out.concat(f);
+    newCount = f.length;
+  }
+  return { ids: out, newCount };
+}
+// 復習モードの記録用: 同じ問題を再出題で解き直しても、QR には問題ごとの最初の解答だけを入れる。
+function firstAnswers(results) {
+  const seen = new Set();
+  const out = [];
+  for (const r of results) {
+    if (seen.has(r.id)) continue;
+    seen.add(r.id);
+    out.push(r);
+  }
+  return out;
+}
+// REVIEW-SELECT-END
+// DOMAIN-SELECT-BEGIN
+// ?domain=A2&n=10 の出題選定。分野は statement_id の先頭（AOFF-* も statement_id で分野が決まる）。
+// 優先順: 期日が来た誤答 → 新規 → 解答済み(clear) → 習得済み。同順位は id 順。
+function pickDomainSet(questions, mastery, domain, n, today) {
+  const rank = (id) => {
+    const m = mastery[id];
+    if (!m) return 2;
+    if (m.s === "learning") return m.r <= today ? 0 : 3;
+    if (m.s === "new") return 1;
+    if (m.s === "clear") return 2;
+    return 4;
+  };
+  return questions.filter(q => q.statement_id.split("-")[0] === domain).map(q => q.id)
+    .sort((a, b) => rank(a) - rank(b) || a.localeCompare(b)).slice(0, n);
+}
+// DOMAIN-SELECT-END
+// EXAM-SELECT-BEGIN
+// 本番通しの出題選定。分野(A1..A6)ごとに round(total*weight/100) 問を割り当てる。
+// 割り当て合計が total を超えたら端数を切り上げた分野から1問ずつ減らし、足りない分野の不足分は
+// 余っている他分野から配点の大きい順に補う。総数は min(total, 全問題数)、重複なし。
+// rand は 0以上1未満を返す関数（同じ rand なら結果は同じ）。入力配列は変更しない。
+function selectExamSet(questions, weights, total, rand) {
+  const domOf = (q) => q.statement_id.split("-")[0];
+  const doms = Object.keys(weights).sort();
+  const shuffle = (arr) => {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  };
+  const pool = {};
+  for (const d of doms) pool[d] = shuffle(questions.filter(q => domOf(q) === d).sort((a, b) => a.id.localeCompare(b.id)));
+  const target = Math.min(total, doms.reduce((s, d) => s + pool[d].length, 0));
+  const exact = {}, take = {};
+  for (const d of doms) {
+    exact[d] = total * weights[d] / 100;
+    take[d] = Math.min(Math.round(exact[d]), pool[d].length);
+  }
+  let sum = doms.reduce((s, d) => s + take[d], 0);
+  while (sum > target) {
+    const cand = doms.filter(d => take[d] > 0)
+      .sort((a, b) => (take[b] - exact[b]) - (take[a] - exact[a]) || a.localeCompare(b));
+    take[cand[0]] -= 1; sum -= 1;
+  }
+  while (sum < target) {
+    const cand = doms.filter(d => take[d] < pool[d].length)
+      .sort((a, b) => (exact[b] - take[b]) - (exact[a] - take[a]) || a.localeCompare(b));
+    take[cand[0]] += 1; sum += 1;
+  }
+  let out = [];
+  for (const d of doms) out = out.concat(pool[d].slice(0, take[d]));
+  return shuffle(out);
+}
+// EXAM-SELECT-END
+const FORM_BASE = "https://docs.google.com/forms/d/e/1FAIpQLSdOZyIlke2oBJDE2SJKgNkS6F0oVG3fkgMq0DW8J_eFHyxX-w/viewform";
+const FORM_ENTRY = "entry.1699881175";
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+// ?ids=id1,id2,... は埋め込み済みの全問題から該当IDだけを抜き出す（無効/該当なしなら既定セットに戻る）。
+let QUESTIONS = QUESTIONS_DEFAULT;
+const _qs = new URLSearchParams(location.search);
+const idsParam = _qs.get("ids");
+const BYID = Object.fromEntries(QUESTIONS_ALL.map(q => [q.id, q]));
+if (idsParam) {
+  const picked = idsParam.split(",").map(id => BYID[id]).filter(Boolean);
+  if (picked.length) QUESTIONS = picked;
+}
+const _d0 = new Date(), _p0 = (n) => String(n).padStart(2, "0");
+const TODAY = _d0.getFullYear() + "-" + _p0(_d0.getMonth() + 1) + "-" + _p0(_d0.getDate());
+function readLS(key) { try { return JSON.parse(localStorage.getItem(key) || "null"); } catch { return null; } }
+function writeLS(key, v) { try { localStorage.setItem(key, JSON.stringify(v)); } catch {} }
+function delLS(key) { try { localStorage.removeItem(key); } catch {} }
+
+// ---- ?domain=A2&n=10 ----
+const DOMAIN = !idsParam && /^A[1-6]$/.test(_qs.get("domain") || "") ? _qs.get("domain") : null;
+const DOMAIN_N = Math.min(Math.max(parseInt(_qs.get("n") || "10", 10) || 10, 1), 30);
+if (DOMAIN) {
+  const ids = pickDomainSet(QUESTIONS_ALL, MASTERY, DOMAIN, DOMAIN_N, TODAY);
+  const picked = ids.map(id => BYID[id]).filter(Boolean);
+  if (picked.length) QUESTIONS = picked;
+}
+
+// ---- 本番通し（?mode=exam）: 配点比率で EXAM_TOTAL 問・全体 EXAM_MINUTES 分 ----
+// 状態（問題ID・回答・締切）は回答のたびに localStorage へ保存する。誤ってリロードしても/タブが落ちても続きから戻れる。
+// 時間の意味: 締切は絶対時刻で、ページを閉じていても進む（実際の試験と同じ）。
+// 「⏸ 中断して保存」を押したときだけ残り時間を凍結し、再開時に残り時間ぶんの新しい締切を作る。
+// 最後の保存から24時間たった状態は破棄して新しい問題セットを選び直す。
+const EXAM = !idsParam && !DOMAIN && _qs.get("mode") === "exam";
+const EXAM_STATE_KEY = "ccao_exam_state";
+const EXAM_STALE_MS = 24 * 3600 * 1000;
+let EXAM_STATE = null, EXAM_RESTORED = false;
+if (EXAM) {
+  const st = readLS(EXAM_STATE_KEY);
+  if (st && st.ids && st.ids.length && Date.now() - st.savedAt < EXAM_STALE_MS && st.ids.every(id => BYID[id])) {
+    EXAM_STATE = st; EXAM_RESTORED = true;
+  } else {
+    const sel = selectExamSet(QUESTIONS_ALL, WEIGHTS, EXAM_TOTAL, Math.random);
+    if (sel.length) {
+      const now = Date.now();
+      EXAM_STATE = { ids: sel.map(q => q.id), startedAt: now, deadline: now + EXAM_TOTAL_SEC * 1000,
+        frozenLeft: null, idx: 0, results: [], qTimes: [], savedAt: now };
+    }
+  }
+  if (EXAM_STATE) QUESTIONS = EXAM_STATE.ids.map(id => BYID[id]);
+}
+
+// ---- 習得ループ（?mode=review&n=10）----
+const REVIEW = !idsParam && !DOMAIN && !EXAM && _qs.get("mode") === "review";
+const REVIEW_N = Math.min(Math.max(parseInt(_qs.get("n") || "10", 10) || 10, 1), 20);
+const NEW_PER_DAY = 15;
+const REVIEW_SET_KEY = "ccao_review_set", REVIEW_DONE_KEY = "ccao_review_done";
+function todayRec(key) { const r = readLS(key); return r && r.date === TODAY ? r : { date: TODAY, ids: [], newCount: 0 }; }
+let REVIEW_EMPTY = false;
+if (REVIEW) {
+  let set = readLS(REVIEW_SET_KEY);
+  if (!set || set.date !== TODAY || !set.ids || !set.ids.length) {
+    const done = todayRec(REVIEW_DONE_KEY);
+    const sel = selectReviewSet(MASTERY, QUESTIONS_ALL.map(q => q.id), TODAY, REVIEW_N,
+      NEW_PER_DAY - done.newCount, done.ids);
+    set = { date: TODAY, ids: sel.ids, newCount: sel.newCount };
+    if (set.ids.length) writeLS(REVIEW_SET_KEY, set);
+  }
+  const picked = set.ids.map(id => BYID[id]).filter(Boolean);
+  if (picked.length) QUESTIONS = picked; else REVIEW_EMPTY = true;
+}
+const ORIG_LEN = QUESTIONS.length;
+const requeueCount = {};
+function markReviewDone() {
+  const done = todayRec(REVIEW_DONE_KEY);
+  const answered = [...new Set(results.map(r => r.id))];
+  const newAnswered = answered.filter(id => MASTERY[id] && MASTERY[id].s === "new").length;
+  done.ids = [...new Set(done.ids.concat(answered))];
+  done.newCount += newAnswered;
+  writeLS(REVIEW_DONE_KEY, done);
+  delLS(REVIEW_SET_KEY);
+}
+let idx = 0; const results = [];
+let picked = [];  // 複数選択問題で現在選ばれている選択肢
+let finished = false;
+const $ = (id) => document.getElementById(id);
+// 本番は70問120分。1問あたりの目安は2分として、経過時間を常時出してペースを体に入れる。
+const PACE_SEC = 120;
+let qStart = 0, tickId = null;
+const qTimes = [];
+const mmss = (s) => Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0");
+function tick() {
+  const s = (Date.now() - qStart) / 1000;
+  $("timer").textContent = mmss(s);
+  $("timer").classList.toggle("over", s > PACE_SEC);
+}
+function startTimer() {
+  qStart = Date.now();
+  if (tickId) clearInterval(tickId);
+  tick(); tickId = setInterval(tick, 1000);
+}
+function stopTimer() {
+  if (tickId) { clearInterval(tickId); tickId = null; }
+  return (Date.now() - qStart) / 1000;
+}
+
+// ---- 本番通しの全体カウントダウン（絶対時刻の締切。中断中だけ凍結）----
+let examTickId = null;
+function examLeft() {
+  const st = EXAM_STATE;
+  return st.frozenLeft !== null ? st.frozenLeft : (st.deadline - Date.now()) / 1000;
+}
+function saveExam(nextIdx) {
+  Object.assign(EXAM_STATE, { idx: nextIdx, results: results.slice(), qTimes: qTimes.slice(), savedAt: Date.now() });
+  writeLS(EXAM_STATE_KEY, EXAM_STATE);
+}
+function examShow() {
+  const left = examLeft();
+  $("examclock").textContent = (EXAM_STATE.frozenLeft !== null ? "中断中 " : "残り ") + mmss(Math.max(0, left));
+  $("examclock").classList.toggle("low", left <= 600);
+  $("examclock").classList.remove("hidden");
+  return left;
+}
+function examTick() {
+  if (examShow() <= 0) finish();  // 0 で自動終了 → 結果送信画面
+}
+function examStart() {
+  if (!EXAM || !EXAM_STATE || examTickId || finished || EXAM_STATE.frozenLeft !== null) return;
+  examTickId = setInterval(examTick, 1000);
+  examTick();
+}
+function examStop() {
+  if (examTickId) { clearInterval(examTickId); examTickId = null; }
+}
+function examFreeze() {
+  EXAM_STATE.frozenLeft = Math.max(0, examLeft());
+  examStop();
+  examShow();
+}
+function examThaw() {
+  if (EXAM_STATE.frozenLeft !== null) {
+    EXAM_STATE.deadline = Date.now() + EXAM_STATE.frozenLeft * 1000;
+    EXAM_STATE.frozenLeft = null;
+  }
+}
+
+if (idsParam && QUESTIONS !== QUESTIONS_DEFAULT) {
+  const doms = [...new Set(QUESTIONS.map(q => q.statement_id.split("-")[0]))].sort().join("+");
+  $("setlabel").textContent = "CCAO-F Practice · " + doms + " · " + QUESTIONS.length + "問";
+}
+if (DOMAIN) {
+  $("setlabel").textContent = "CCAO-F Practice · " + DOMAIN + " · " + QUESTIONS.length + "問";
+}
+if (EXAM) {
+  $("setlabel").textContent = "CCAO-F 本番通し · " + QUESTIONS.length + "問 / " + EXAM_MINUTES + "分";
+  $("examnote").classList.remove("hidden");
+}
+if (REVIEW && !REVIEW_EMPTY) {
+  $("setlabel").textContent = "CCAO-F 習得ループ · " + QUESTIONS.length + "問（誤答は同じセッションで再出題）";
+}
+// 選択肢の「並び順」だけをセッションごとにシャッフルする（ラベルは元の記号のまま表示）。
+// ラベルまで表示位置基準に振り直すと、解説が元の記号を前提に「Bが正解で…」と書かれているため
+// 画面表示と解説が食い違う。ラベルは元の記号のまま位置だけ変えることで、解説との整合を保ちつつ
+// 位置記憶での正答だけを防ぐ。記録される answer も元の記号のまま。
+// 選択肢数は4とは限らない（複数選択問題は5択）ので問題ごとに数える。
+function orderFor(q) {
+  if (!q.__order) {
+    const keys = Object.keys(q.choices).sort();
+    for (let i = keys.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [keys[i], keys[j]] = [keys[j], keys[i]];
+    }
+    q.__order = keys;
+  }
+  return q.__order;
+}
+function render() {
+  const q = QUESTIONS[idx];
+  const order = orderFor(q);
+  $("counter").textContent = (idx + 1) + " / " + QUESTIONS.length;
+  $("pbar").style.width = (idx / QUESTIONS.length * 100) + "%";
+  $("domchip").textContent = q.statement_id;
+  $("scenario").textContent = q.scenario;
+  $("question").textContent = q.question;
+  $("feedback").classList.add("hidden");
+  const n = selectCount(q);
+  picked = [];
+  const box = $("choices"); box.innerHTML = "";
+  order.forEach((key) => {
+    const b = document.createElement("button");
+    b.className = "choice"; b.dataset.key = key;
+    const k = document.createElement("span"); k.className = "key"; k.textContent = key;
+    const t = document.createElement("span"); t.textContent = q.choices[key];
+    b.append(k, t);
+    b.addEventListener("click", () => { n > 1 ? toggle(key) : answer([key]); });
+    box.appendChild(b);
+  });
+  // 複数選択（2つ選ぶ問題）は選んでから「回答する」で確定させる。
+  $("submitbtn").classList.toggle("hidden", n === 1);
+  if (n > 1) { $("submitbtn").disabled = true; $("submitbtn").textContent = "回答する（" + n + "つ選択）"; }
+  startTimer();
+  examStart();
+}
+// 正解キーの集合。単一選択は "B"、複数選択は "B,D" のようにカンマ区切りで持つ。
+function answerKeys(q) { return String(q.answer).split(",").map(s => s.trim()).filter(Boolean); }
+function selectCount(q) { return q.select_count || answerKeys(q).length || 1; }
+function toggle(key) {
+  const q = QUESTIONS[idx], n = selectCount(q);
+  const i = picked.indexOf(key);
+  if (i >= 0) picked.splice(i, 1);
+  else if (picked.length < n) picked.push(key);
+  for (const b of document.querySelectorAll(".choice")) {
+    b.classList.toggle("sel", picked.includes(b.dataset.key));
+  }
+  $("submitbtn").disabled = picked.length !== n;
+}
+$("submitbtn").addEventListener("click", () => answer(picked.slice()));
+function answer(keys) {
+  const q = QUESTIONS[idx];
+  const want = answerKeys(q);
+  const correct = keys.length === want.length && want.every(k => keys.includes(k));  // 完全一致で採点
+  const secs = stopTimer();
+  qTimes.push(secs);
+  results.push({ id: q.id, correct, keys: keys.slice() });
+  if (REVIEW && !correct && (requeueCount[q.id] || 0) < 2) {
+    requeueCount[q.id] = (requeueCount[q.id] || 0) + 1;
+    delete q.__order;          // 再出題では並びを変える（位置記憶で正解しない）
+    QUESTIONS.push(q);
+  }
+  if (EXAM) {  // 本番通しは1問ごとの正誤・解説を出さず、そのまま次へ進む
+    saveExam(idx + 1);
+    idx += 1;
+    if (idx < QUESTIONS.length) { render(); window.scrollTo({top:0}); } else { finish(); }
+    return;
+  }
+  $("submitbtn").classList.add("hidden");
+  for (const b of document.querySelectorAll(".choice")) {
+    b.disabled = true; b.classList.remove("sel");
+    if (want.includes(b.dataset.key)) b.classList.add("correct");
+    else if (keys.includes(b.dataset.key)) b.classList.add("wrong");
+  }
+  const v = $("verdict");
+  const pace = " · " + mmss(secs) + (secs > PACE_SEC ? " ⏱ 目安(2:00)超過" : "");
+  v.textContent = (correct ? "✓ 正解" : "✗ 不正解 — 正解: " + want.join(", ")) + pace;
+  v.className = "verdict " + (correct ? "ok" : "ng");
+  $("expl").textContent = q.explanation;
+  const a = $("srclink");
+  if (q.source && /^https?:[/][/]/.test(q.source)) { a.href = q.source; a.textContent = q.source; a.classList.remove("hidden"); }
+  else { a.removeAttribute("href"); a.textContent = ""; a.classList.add("hidden"); }
+  $("nextbtn").textContent = idx === QUESTIONS.length - 1 ? "結果を見る →" : "次の問題 →";
+  $("feedback").classList.remove("hidden");
+  $("feedback").scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+$("nextbtn").addEventListener("click", () => {
+  idx += 1;
+  if (idx < QUESTIONS.length) { render(); window.scrollTo({top:0}); } else { finish(); }
+});
+function finish() {
+  if (finished) return;
+  finished = true;
+  examStop();
+  $("examclock").classList.add("hidden");
+  clearProgress();
+  if (EXAM) delLS(EXAM_STATE_KEY);
+  if (REVIEW) markReviewDone();
+  $("quiz").classList.add("hidden");
+  $("resumebox").classList.add("hidden"); $("pausedbox").classList.add("hidden");
+  stopTimer();
+  $("timer").textContent = "";
+  $("pbar").style.width = "100%";
+  if (!results.length) {  // 回答ゼロでは結果コードを作らない（空の QR を送らせない）
+    $("scoreline").textContent = "0 / 0";
+    $("paceline").textContent = "回答がないため、記録する結果はありません。";
+    for (const id of ["qrcode", "copybtn", "codelabel", "formbtn"]) $(id).classList.add("hidden");
+    $("final").classList.remove("hidden");
+    return;
+  }
+  const ok = results.filter(r => r.correct).length;
+  $("scoreline").textContent = ok + " / " + results.length;
+  if (qTimes.length) {
+    const avg = qTimes.reduce((a, b) => a + b, 0) / qTimes.length;
+    const over = qTimes.filter(s => s > PACE_SEC).length;
+    $("paceline").innerHTML = "平均 <b>" + mmss(avg) + "</b> / 問（目安 2:00）· 超過 <b>"
+      + over + "</b> 問"
+      + (avg > PACE_SEC ? " — もう少しペースを上げましょう" : " — 本番ペースを維持できています");
+  }
+  if (EXAM && results.length < QUESTIONS.length) {
+    $("paceline").innerHTML += "<br>（" + QUESTIONS.length + "問中 " + results.length + "問を回答。未回答は記録に含めません）";
+  }
+  const list = $("reslist");
+  for (const r of results) {
+    const q = BYID[r.id];
+    const row = document.createElement("div"); row.className = "row";
+    const m = document.createElement("span"); m.className = "mark";
+    m.textContent = r.correct ? "✓" : "✗"; m.style.color = r.correct ? "var(--ok)" : "var(--ng)";
+    const t = document.createElement("span");
+    t.textContent = r.id + " (" + q.statement_id + ") " + (EXAM ? q.question : q.question.slice(0, 60) + "…");
+    row.append(m, t); list.appendChild(row);
+    if (EXAM) {  // 本番通し: 正誤・正解・解説は結果画面でまとめて見せる
+      const d = document.createElement("div"); d.className = "expl";
+      d.style.whiteSpace = "pre-wrap";
+      d.textContent = "あなたの回答: " + ((r.keys || []).join(", ") || "-") + " / 正解: " + answerKeys(q).join(", ")
+        + "\n" + q.explanation;
+      list.appendChild(d);
+    }
+  }
+  const recorded = REVIEW ? firstAnswers(results) : results;
+  const code = "QR|" + TODAY + "|quiz-artifact|" + recorded.map(r => r.id + ":" + (r.correct ? "o" : "x")).join(",");
+  if (REVIEW && recorded.length < results.length) {
+    $("paceline").innerHTML += "<br>（再出題の解き直しは記録に含めず、最初の解答だけを記録します）";
+  }
+  $("qrcode").textContent = code;
+  if (FORM_BASE && FORM_ENTRY) {
+    const sep = FORM_BASE.includes("?") ? "&" : "?";
+    $("formbtn").href = FORM_BASE + sep + FORM_ENTRY + "=" + encodeURIComponent(code);
+    $("formbtn").classList.remove("hidden");
+  }
+  $("copybtn").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(code); $("copybtn").textContent = "コピーしました ✓"; }
+    catch { const sel = window.getSelection(), rg = document.createRange();
+      rg.selectNodeContents($("qrcode")); sel.removeAllRanges(); sel.addRange(rg);
+      $("copybtn").textContent = "選択しました — 長押しでコピー"; }
+  });
+  if (REVIEW) {
+    const a = document.createElement("a");
+    a.className = "formbtn";
+    a.href = location.pathname + "?mode=review&n=" + REVIEW_N;
+    a.textContent = "▶ 次の" + REVIEW_N + "問へ（結果の送信を先に）";
+    $("final").appendChild(a);
+  }
+  $("final").classList.remove("hidden");
+}
+
+// 中断・再開: 問題セットごとの進捗をlocalStorageに保存する。
+// 保存先はその端末のブラウザだけ（別端末には引き継がれない）。解答前の1問の途中経過は保存しない。
+const PROGRESS_KEY = "ccao_quiz_progress";
+const setKey = QUESTIONS.map(q => q.id).join(",");
+function readProgressMap() { return readLS(PROGRESS_KEY) || {}; }
+function writeProgressMap(m) { writeLS(PROGRESS_KEY, m); }
+function clearProgress() { const m = readProgressMap(); delete m[setKey]; writeProgressMap(m); }
+function saveProgress(nextIdx) {
+  if (EXAM) { saveExam(nextIdx); return; }
+  const m = readProgressMap();
+  m[setKey] = { idx: nextIdx, results: results.slice(), qTimes: qTimes.slice(),
+    extra: QUESTIONS.slice(ORIG_LEN).map(q => q.id), savedAt: new Date().toISOString() };
+  writeProgressMap(m);
+}
+function applySaved(s) {
+  idx = s.idx; results.push(...s.results); qTimes.push(...s.qTimes);
+  for (const id of (s.extra || [])) {
+    if (BYID[id]) QUESTIONS.push(BYID[id]);
+    requeueCount[id] = (requeueCount[id] || 0) + 1;
+  }
+}
+function showReviewEmpty() {
+  $("quiz").classList.add("hidden");
+  const box = document.createElement("div");
+  box.className = "card";
+  box.innerHTML = '<span class="eyebrow">習得ループ</span>'
+    + '<p style="margin:10px 0 0">今日の復習対象はありません（期日が来た誤答問題・新規枠とも空）。</p>';
+  $("app").appendChild(box);
+}
+function showNoQuestions() {
+  $("quiz").classList.add("hidden");
+  const box = document.createElement("div");
+  box.className = "card";
+  box.innerHTML = '<p style="margin:0">出題できる問題がありません。</p>';
+  $("app").appendChild(box);
+}
+function startQuiz() {
+  $("resumebox").classList.add("hidden"); $("pausedbox").classList.add("hidden");
+  $("quiz").classList.remove("hidden");
+  render(); window.scrollTo({ top: 0 });
+}
+$("pausebtn").addEventListener("click", () => {
+  const answered = !$("feedback").classList.contains("hidden");
+  const nextIdx = answered ? idx + 1 : idx;
+  if (nextIdx >= QUESTIONS.length) { finish(); return; }  // 最終問題まで解き終えているなら結果画面へ
+  stopTimer();
+  if (EXAM) examFreeze();   // 中断を押したときだけ残り時間を凍結する（回答ゼロでも時計・問題セットは維持）
+  idx = nextIdx;
+  saveProgress(nextIdx);
+  $("quiz").classList.add("hidden");
+  $("pausedinfo").textContent = "ここまで " + results.length + "問回答済み。次は " + (nextIdx + 1) + "/" + QUESTIONS.length
+    + "問目です。このURLを開き直すと続きから再開できます。"
+    + (EXAM ? "（中断中は残り時間が進みません。再開すると続きから数えます）" : "");
+  $("pausedbox").classList.remove("hidden");
+});
+$("continuebtn").addEventListener("click", () => {
+  if (EXAM) { examThaw(); saveExam(idx); }
+  startQuiz();
+});
+$("earlybtn").addEventListener("click", () => {
+  if (!results.length) { $("earlybtn").textContent = "まだ1問も回答していません"; return; }
+  finish();
+});
+function bootExam() {
+  const s = EXAM_STATE;
+  if (!EXAM_RESTORED) { saveExam(0); render(); return; }
+  idx = s.idx; results.push(...s.results); qTimes.push(...s.qTimes);
+  if (s.frozenLeft === null && examLeft() <= 0) { finish(); return; }  // 閉じている間に時間切れ
+  if (s.frozenLeft === null && !results.length) { render(); return; }   // 1問も解く前のリロード: そのまま続行
+  $("resumeinfo").textContent = (s.frozenLeft !== null ? "中断中（残り " + mmss(s.frozenLeft) + "）: " : "時間は進行中: ")
+    + results.length + "問回答済み・次は " + (idx + 1) + "/" + QUESTIONS.length + "問目"
+    + (s.frozenLeft !== null ? "。再開すると残り時間が動き出します。" : "。制限時間は実時間で進んでいます。");
+  $("quiz").classList.add("hidden");
+  $("resumebox").classList.remove("hidden");
+  examShow();
+  examStart();
+  $("resumebtn").addEventListener("click", () => { examThaw(); saveExam(idx); startQuiz(); });
+  $("resumerecbtn").addEventListener("click", () => { $("resumebox").classList.add("hidden"); finish(); });
+  $("restartbtn").addEventListener("click", () => { delLS(EXAM_STATE_KEY); location.reload(); });
+}
+(function boot() {
+  if (REVIEW_EMPTY) { showReviewEmpty(); return; }
+  if (!QUESTIONS.length) { showNoQuestions(); return; }
+  if (EXAM) { bootExam(); return; }
+  const s = readProgressMap()[setKey];
+  if (!s || !s.results || !s.results.length || s.idx >= QUESTIONS.length + (s.extra || []).length) { render(); return; }
+  const d = new Date(s.savedAt);
+  $("resumeinfo").textContent = (d.getMonth() + 1) + "/" + d.getDate() + " に中断: " + s.results.length
+    + "問回答済み・次は " + (s.idx + 1) + "/" + (QUESTIONS.length + (s.extra || []).length) + "問目";
+  $("quiz").classList.add("hidden");
+  $("resumebox").classList.remove("hidden");
+  $("resumebtn").addEventListener("click", () => { applySaved(s); startQuiz(); });
+  $("resumerecbtn").addEventListener("click", () => { applySaved(s); $("resumebox").classList.add("hidden"); finish(); });
+  $("restartbtn").addEventListener("click", () => { clearProgress(); startQuiz(); });
+})();
+</script>
+</body>
+</html>
