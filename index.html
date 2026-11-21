@@ -134,11 +134,11 @@ footer a { color:var(--accent); }
     <div class="tile"><div class="v num">0%</div><div class="k">全期間正答率</div></div>
   </div>
 
-  <div class="card"><span class="eyebrow">🔁 今日の習得ループ</span><div class="t" style="font-weight:600;margin:6px 0 2px">今日 0/50問・連続達成 0日</div><div style="height:8px;border-radius:4px;background:var(--line);margin:6px 0 8px"><div style="height:8px;border-radius:4px;background:var(--accent);width:0%"></div></div><div class="d" style="margin-bottom:10px">復習の期日 0問 / 習得済み 0問（一度でも誤答 0問）。誤答した問題を、日をおいて3回連続で正解すると習得済みになります</div><a class="abtn" href="https://eztamu.github.io/ccao-f-dashboard/quiz.html?mode=review&amp;n=10">▶ 10問（復習）</a></div>
+  <div class="card"><div id="mastery-card" data-built="2026-11-21" data-goal="50"><span class="eyebrow">🔁 今日の習得ループ</span><div class="t" style="font-weight:600;margin:6px 0 2px"><span id="ml-today">今日 0/50問</span>・連続達成 0日<span class="ml-asof"></span></div><div style="height:8px;border-radius:4px;background:var(--line);margin:6px 0 8px"><div id="ml-bar" style="height:8px;border-radius:4px;background:var(--accent);width:0%"></div></div><div class="d" style="margin-bottom:10px">復習の期日 0問<span class="ml-asof"></span> / 習得済み 0問（一度でも誤答 0問）。誤答した問題を、日をおいて3回連続で正解すると習得済みになります</div><a class="abtn" href="https://eztamu.github.io/ccao-f-dashboard/quiz.html?mode=review&amp;n=10">▶ 10問（復習）</a></div></div>
 
   <div class="card">
     <span class="eyebrow">次の一手（効果の大きい順）</span>
-    <div class="actions"><div class="action"><span class="n num">1</span><div class="body"><div class="t">A2 クイズ 2問で新規開拓</div><div class="d">出力の評価と品質管理（残り4スキル）</div><a class="abtn" href="https://eztamu.github.io/ccao-f-dashboard/quiz.html?ids=A2-q002,AOFF-1">▶ 今すぐ演習</a></div><div class="impact"><div class="pt num">+14.0pt</div><div class="min num">≈4分</div></div></div><div class="action"><span class="n num">2</span><div class="body"><div class="t">習得ループ 10問</div><div class="d">期日の来た復習を優先し、残りは新規問題</div><a class="abtn ghost" href="https://eztamu.github.io/ccao-f-dashboard/quiz.html?mode=review&amp;n=10">▶ 10問（復習）</a></div><div class="impact"><div class="pt num">実戦力UP</div><div class="min num">≈20分</div></div></div></div>
+    <div class="actions"><div class="action"><span class="n num">1</span><div class="body"><div class="t">A2 クイズ 8問で新規開拓</div><div class="d">出力の評価と品質管理（残り4スキル）</div><a class="abtn" href="https://eztamu.github.io/ccao-f-dashboard/quiz.html?ids=A2-q003,A2-q004,A2-q005,A2-q006,A2-q007,A2-q008,A2-q002,A2-q021">▶ 今すぐ演習</a></div><div class="impact"><div class="pt num">+14.0pt</div><div class="min num">≈16分</div></div></div><div class="action"><span class="n num">2</span><div class="body"><div class="t">習得ループ 10問</div><div class="d">期日の来た復習を優先し、残りは新規問題</div><a class="abtn ghost" href="https://eztamu.github.io/ccao-f-dashboard/quiz.html?mode=review&amp;n=10">▶ 10問（復習）</a></div><div class="impact"><div class="pt num">実戦力UP</div><div class="min num">≈20分</div></div></div></div>
   </div>
 
   <div class="card">
@@ -181,6 +181,23 @@ const now = new Date();
 const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 const todayStr = today.getFullYear() + "-" + pad(today.getMonth() + 1) + "-" + pad(today.getDate());
 document.getElementById("today-label").textContent = todayStr;
+
+// MASTERY-STALE-BEGIN
+// 習得ループカードはビルド時点の数字。閲覧日がビルド日と違えば「今日 n/50」を 0 に戻し、
+// 連続達成・復習期日の数には（M/D時点）を付けて古い数字を今日のものとして見せない。
+function applyMasteryStale(card, todayStr) {
+  const built = card && card.dataset && card.dataset.built;
+  if (!built || built === todayStr) return false;
+  const todayEl = card.querySelector("#ml-today");
+  if (todayEl) todayEl.textContent = "今日 0/" + (card.dataset.goal || "50") + "問";
+  const bar = card.querySelector("#ml-bar");
+  if (bar) bar.style.width = "0%";
+  const [, mm, dd] = built.split("-").map(Number);
+  for (const el of card.querySelectorAll(".ml-asof")) el.textContent = "（" + mm + "/" + dd + "時点）";
+  return true;
+}
+// MASTERY-STALE-END
+applyMasteryStale(document.getElementById("mastery-card"), todayStr);
 
 // 受験日カウントダウン（閲覧時点で再計算）
 if (D.exam_date) {
