@@ -122,7 +122,7 @@ footer a { color:var(--accent); }
     </svg>
     <div class="hero-right">
       <span class="eyebrow">合格準備度</span>
-      <div class="cd num" id="countdown">受験日: 未設定</div>
+      <div class="cd num" id="countdown">受験日まで <b id="days-left">20</b> 日</div>
       <div class="milestones"><span class="ms">25pt</span><span class="ms">50pt</span><span class="ms">75pt</span><span class="ms">100pt</span></div>
       <div class="formula">= Σ 配点% × 分野の習熟度（Lv0=0 → Lv3=0.7 → Lv5=1.0 の平均）</div>
     </div>
@@ -138,7 +138,7 @@ footer a { color:var(--accent); }
 
   <div class="card">
     <span class="eyebrow">次の一手（効果の大きい順）</span>
-    <div class="actions"><div class="action"><span class="n num">1</span><div class="body"><div class="t">A2 クイズ 8問で新規開拓</div><div class="d">出力の評価と品質管理（残り4スキル）</div><a class="abtn" href="https://eztamu.github.io/ccao-f-dashboard/quiz.html?ids=A2-q003,A2-q004,A2-q005,A2-q006,A2-q007,A2-q008,A2-q002,A2-q021">▶ 今すぐ演習</a></div><div class="impact"><div class="pt num">+14.0pt</div><div class="min num">≈16分</div></div></div><div class="action"><span class="n num">2</span><div class="body"><div class="t">習得ループ 10問</div><div class="d">期日の来た復習を優先し、残りは新規問題</div><a class="abtn ghost" href="https://eztamu.github.io/ccao-f-dashboard/quiz.html?mode=review&amp;n=10">▶ 10問（復習）</a></div><div class="impact"><div class="pt num">実戦力UP</div><div class="min num">≈20分</div></div></div></div>
+    <div class="actions"><div class="action"><span class="n num">1</span><div class="body"><div class="t">A2 クイズ 8問で新規開拓</div><div class="d">出力の評価と品質管理（残り4スキル）</div><a class="abtn" href="https://eztamu.github.io/ccao-f-dashboard/quiz.html?ids=A2-q003,A2-q004,A2-q005,A2-q006,A2-q007,A2-q008,A2-q028,A2-q029">▶ 今すぐ演習</a></div><div class="impact"><div class="pt num">+14.0pt</div><div class="min num">≈16分</div></div></div><div class="action"><span class="n num">2</span><div class="body"><div class="t">習得ループ 10問</div><div class="d">期日の来た復習を優先し、残りは新規問題</div><a class="abtn ghost" href="https://eztamu.github.io/ccao-f-dashboard/quiz.html?mode=review&amp;n=10">▶ 10問（復習）</a></div><div class="impact"><div class="pt num">実戦力UP</div><div class="min num">≈20分</div></div></div></div>
   </div>
 
   <div class="card">
@@ -174,7 +174,7 @@ footer a { color:var(--accent); }
   </footer>
 </div>
 <script>
-const D = {"exam_date": null};
+const D = {"exam_date": "2026-12-12"};
 const dayMs = 86400000;
 const pad = (n) => String(n).padStart(2, "0");
 const now = new Date();
